@@ -1,11 +1,11 @@
 {
-  "Hello cat": {
-    "Content-Length": "241"
+  "cat": {
+    "Content-Length": "247"
   },
-  "Котяра": {
-    "Content-Length": "317"
+  "Кот": {
+    "Content-Length": "278"
   },
-  "Cat": {
-    "Content-Length": "256"
+  "Kitty": {
+    "Content-Length": "235"
   }
 }
