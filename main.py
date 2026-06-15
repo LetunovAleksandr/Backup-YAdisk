@@ -1,6 +1,5 @@
 import requests
 import os
-import yadisk
 import json
 from requests import RequestException
 
@@ -24,7 +23,7 @@ class Backup:
                 headers={'Authorization': f'OAuth {self.token}'}
             )
             if response.status_code == 200:
-                print('Авторизация: Успешно')
+                print('Авторизация: Успешно.')
                 return True
 
             print(
@@ -34,7 +33,7 @@ class Backup:
             )
             return False
         except RequestException as e:
-            print(f'Ошибка запроса: {e}')
+            print(f'Ошибка запроса: {e}.')
             return False
 
 
@@ -43,7 +42,7 @@ class Backup:
             self.response = requests.get(
                 f'https://cataas.com/cat/says/{self.text}?json=true'
                 )
-        print('Изображение получено')
+        print('Изображение получено.')
         return self.response
 
     def create_json(self):
@@ -57,7 +56,7 @@ class Backup:
         if os.path.exists('data/pictures_data.json'):
             with open('data/pictures_data.json', 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                print('Файл "pictures_data.json" открыт')
+                print('Файл "pictures_data.json" открыт.')
                 data.update(json_data)
                 with open('data/pictures_data.json', 'w', encoding='utf-8') as file:
                     json.dump(data, file, ensure_ascii=False, indent=2)
@@ -76,12 +75,12 @@ class Backup:
             'path': f'/{self.name_folder}',
         }
 
-        client = yadisk.Client(token=self.token)
-        if client.is_dir(f'/{self.name_folder}'):
+        folder_response = requests.get(self.get_api('/disk/resources'), headers=headers, params=params)
+        if folder_response.status_code == 200:
             params['path'] = f'/{self.name_folder}/{self.text}.jpeg'
             params.update({'url': response['url']})
             requests.post(self.get_api('/disk/resources/upload'), headers=headers, params=params)
-            print(f'Изображение "{self.text}" загружено в папку {self.name_folder}.')
+            print(f'Изображение "{self.text}" загружено в папку "{self.name_folder}".')
         else:
             requests.put(self.get_api('/disk/resources'), headers=headers, params=params)
             params['path'] = f'/{self.name_folder}/{self.text}.jpeg'
