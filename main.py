@@ -18,6 +18,12 @@ class Backup:
 
     def check_token(self):
         try:
+            self.token.encode('ascii')
+        except UnicodeEncodeError:
+            print('Неверный токен.')
+            return False
+
+        try:
             response = requests.get(
                 self.get_api('/disk'),
                 headers={'Authorization': f'OAuth {self.token}'}
@@ -66,27 +72,32 @@ class Backup:
                 json.dump(json_data, f, ensure_ascii=False, indent=2)
                 print('Файл "pictures_data.json" создан. Данные записаны.')
 
+    def create_folder (self, headers):
+        params = {
+            'path': f'/{self.name_folder}',
+        }
+        folder_response = requests.get(self.get_api('/disk/resources'), headers=headers, params=params)
+        if folder_response.status_code == 200:
+            print (f'Папка "{self.name_folder}" существует.')
+
+        else:
+            requests.put(self.get_api('/disk/resources'), headers=headers, params=params)
+            print(f'Папка "{self.name_folder}" создана.')
+
+
     def save_picture(self):
         response = self.response.json()
         headers = {
             'Authorization': f'OAuth {self.token}'
         }
         params = {
-            'path': f'/{self.name_folder}',
+            'path': f'/{self.name_folder}/{self.text}.jpeg',
+            'url': response['url']
         }
+        self.create_folder(headers)
+        requests.post(self.get_api('/disk/resources/upload'), headers=headers, params=params)
+        print(f'Изображение "{self.text}" загружено в папку "{self.name_folder}".')
 
-        folder_response = requests.get(self.get_api('/disk/resources'), headers=headers, params=params)
-        if folder_response.status_code == 200:
-            params['path'] = f'/{self.name_folder}/{self.text}.jpeg'
-            params.update({'url': response['url']})
-            requests.post(self.get_api('/disk/resources/upload'), headers=headers, params=params)
-            print(f'Изображение "{self.text}" загружено в папку "{self.name_folder}".')
-        else:
-            requests.put(self.get_api('/disk/resources'), headers=headers, params=params)
-            params['path'] = f'/{self.name_folder}/{self.text}.jpeg'
-            params.update({'url': response['url']})
-            requests.post(self.get_api('/disk/resources/upload'), headers=headers, params=params)
-            print(f'Папка "{self.name_folder}" создана. Файл "{self.text}" загружен.')
 
 picture_cat = Backup(input('Введите токен Яндекс диска: '), input('Введите текст для изображения: '))
 if picture_cat.check_token():

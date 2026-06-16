@@ -1,11 +1,11 @@
 {
-  "cat": {
-    "Content-Length": "247"
-  },
   "Кот": {
-    "Content-Length": "278"
+    "Content-Length": "285"
+  },
+  "Cat": {
+    "Content-Length": "233"
   },
   "Kitty": {
-    "Content-Length": "235"
+    "Content-Length": "262"
   }
 }
