@@ -11,10 +11,15 @@ class Backup:
         self.name_folder = 'PYQA-134'
         self.response = None
 
+    @property
+    def headers(self):
+        return {
+            'Authorization': f'OAuth {self.token}'
+        }
+
     @staticmethod
     def get_api (path):
-        api = f'https://cloud-api.yandex.net/v1{path}'
-        return api
+        return f'https://cloud-api.yandex.net/v1{path}'
 
     def check_token(self):
         try:
@@ -26,7 +31,7 @@ class Backup:
         try:
             response = requests.get(
                 self.get_api('/disk'),
-                headers={'Authorization': f'OAuth {self.token}'}
+                headers=self.headers
             )
             if response.status_code == 200:
                 print('Авторизация: Успешно.')
@@ -46,9 +51,15 @@ class Backup:
     def get_picture_cat(self):
         if self.response is None:
             self.response = requests.get(
-                f'https://cataas.com/cat/says/{self.text}?json=true'
-                )
-        print('Изображение получено.')
+                f'https://cataas.com/cat/says/{self.text}?json=true',
+                timeout=10
+            )
+            if self.response.status_code != 200:
+               raise ValueError(
+                   f"Ошибка получения изображения {self.response.status_code}. "
+               )
+            else:
+                print('Изображение получено.')
         return self.response
 
     def create_json(self):
@@ -72,35 +83,57 @@ class Backup:
                 json.dump(json_data, f, ensure_ascii=False, indent=2)
                 print('Файл "pictures_data.json" создан. Данные записаны.')
 
-    def create_folder (self, headers):
+    def create_folder(self, name_folder):
         params = {
-            'path': f'/{self.name_folder}',
+            'path': f'/{name_folder}',
         }
-        folder_response = requests.get(self.get_api('/disk/resources'), headers=headers, params=params)
+        folder_response = requests.get(
+            self.get_api('/disk/resources'),
+            headers=self.headers,
+            params=params,
+            timeout=10
+        )
         if folder_response.status_code == 200:
-            print (f'Папка "{self.name_folder}" существует.')
+            print (f'Папка "{name_folder}" существует.')
 
         else:
-            requests.put(self.get_api('/disk/resources'), headers=headers, params=params)
-            print(f'Папка "{self.name_folder}" создана.')
+            requests.put(
+                self.get_api('/disk/resources'),
+                headers=self.headers,
+                params=params,
+                timeout=10
+            )
+            print(f'Папка "{name_folder}" создана.')
 
 
     def save_picture(self):
         response = self.response.json()
-        headers = {
-            'Authorization': f'OAuth {self.token}'
-        }
         params = {
             'path': f'/{self.name_folder}/{self.text}.jpeg',
             'url': response['url']
         }
-        self.create_folder(headers)
-        requests.post(self.get_api('/disk/resources/upload'), headers=headers, params=params)
-        print(f'Изображение "{self.text}" загружено в папку "{self.name_folder}".')
+        self.create_folder(self.name_folder)
+        save_picture = requests.post(
+            self.get_api('/disk/resources/upload'),
+            headers=self.headers,
+            params=params,
+            timeout=10
+        )
+        if save_picture.status_code in (200, 201, 202):
+            print(f'Изображение "{self.text}" загружено в папку "{self.name_folder}".')
+        else:
+            print(save_picture.status_code, save_picture.text)
+
+    def backup(self):
+        if picture_cat.check_token():
+            picture_cat.get_picture_cat()
+            picture_cat.create_json()
+            picture_cat.save_picture()
 
 
-picture_cat = Backup(input('Введите токен Яндекс диска: '), input('Введите текст для изображения: '))
-if picture_cat.check_token():
-    picture_cat.get_picture_cat()
-    picture_cat.create_json()
-    picture_cat.save_picture()
+if __name__ == '__main__':
+    picture_cat = Backup(
+        input('Введите токен Яндекс диска: '),
+        input('Введите текст для изображения: ')
+    )
+    picture_cat.backup()
